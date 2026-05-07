@@ -1,24 +1,38 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+type CardType = { id: number; title: string; body: string };
+
 export default function Home() {
-  const [cards, setCards] = useState([
-    { id: 1, title: "Flight Update", body: "Berlin flight delayed 47 min. Dashboard auto-adjusted route." }
-  ]);
+  const [cards, setCards] = useState<CardType[]>([]);
   const [input, setInput] = useState("");
-  const [response, setResponse] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("lifeui-cards");
+    if (saved) setCards(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("lifeui-cards", JSON.stringify(cards));
+  }, [cards]);
 
   const handleSend = () => {
-    if (!input) return;
-    setResponse("Thinking…");
-    // Fake AI response for now
+    if (!input.trim()) return;
+    setIsLoading(true);
     setTimeout(() => {
-      setResponse(`Got it: ${input}. Added to your graph.`);
+      const newCard: CardType = {
+        id: Date.now(),
+        title: "New Insight",
+        body: `Understood: "${input}". Added to your personal graph.`,
+      };
+      setCards(prev => [newCard, ...prev]);
       setInput("");
-    }, 800);
+      setIsLoading(false);
+    }, 900);
   };
 
   return (
@@ -31,14 +45,14 @@ export default function Home() {
               LifeUI
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 max-h-[420px] overflow-auto">
             {cards.map(card => (
-              <div key={card.id}>
+              <div key={card.id} className="border-l-2 border-emerald-400 pl-4">
                 <p className="text-zinc-400 text-sm">{card.title}</p>
-                <p className="mt-2 text-lg leading-relaxed">{card.body}</p>
+                <p className="mt-1 text-lg leading-relaxed">{card.body}</p>
               </div>
             ))}
-            {response && <p className="text-emerald-400 text-sm mt-4">{response}</p>}
+            {isLoading && <p className="text-emerald-400 text-sm">Thinking…</p>}
           </CardContent>
         </Card>
 
@@ -50,7 +64,7 @@ export default function Home() {
             placeholder="Ask anything about your life..."
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
           />
-          <Button onClick={handleSend}>Send</Button>
+          <Button onClick={handleSend} disabled={isLoading}>Send</Button>
         </div>
       </div>
     </div>
